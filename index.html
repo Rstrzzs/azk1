@@ -1,10 +1,930 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mosca</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            color: white;
+            overflow-x: hidden;
+            background: linear-gradient(-45deg,#33d6c9, #013220, #013a33, #0f1f1a, #000000);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            min-height: 100vh;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .menu {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .long-button {
+            width: 300px;
+            padding: 15px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .square-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            width: 300px;
+        }
+
+        .square-button {
+            width: calc(50% - 10px);
+            padding: 15px 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .long-button:hover, .square-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .rate-container {
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+            text-align: left; /* Добавлено выравнивание по левому краю */
+        }
+
+        .rate-title {
+            font-size: 24px;
+            text-align: left; /* Изменено с center на left */
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .rate-values {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+            align-items: flex-start; /* Добавлено выравнивание по левому краю */
+        }
+
+        .rate-type {
+            font-size: 18px;
+            margin-bottom: 10px;
+            text-align: left; /* Добавлено выравнивание по левому краю */
+        }
+
+        .rate-number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-align: left; /* Добавлено выравнивание по левому краю */
+        }
+
+        .rate-disclaimer {
+            margin: 25px 0;
+            font-size: 16px;
+            line-height: 1.5;
+            text-align: left; /* Изменено с center на left */
+        }
+
+        .rate-checkbox {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            gap: 10px;
+            justify-content: flex-start; /* Изменено с center на flex-start */
+        }
+        .rate-button {
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 16px;
+            margin: 20px 0;
+        }
+
+        .rate-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        /* Стили для экрана обмена */
+        .exchange-container {
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+        }
+
+        .exchange-title {
+            font-size: 24px;
+            text-align: left;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .exchange-options {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+
+        .exchange-option {
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 5px;
+            background: transparent;
+            border: none;
+            color: white;
+        }
+
+        .exchange-option.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .exchange-input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+
+        .exchange-divider {
+            border: none;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 20px 0;
+        }
+
+        .exchange-section-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .exchange-field {
+            margin-bottom: 20px;
+        }
+
+        .exchange-field-title {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .exchange-field-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+
+        .exchange-checkbox {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+
+        .exchange-checkbox input {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .exchange-button {
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .exchange-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sell-menu {
+            display: none;
+        }
+
+        /* Стили для экрана "Все заявки" */
+        .orders-container {
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .orders-title {
+            font-size: 24px;
+            text-align: left;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .orders-empty {
+            font-size: 16px;
+            margin: 40px 0;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .orders-button {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .orders-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Стили для экрана поддержки */
+        .support-container {
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+        }
+
+        .support-title {
+            font-size: 24px;
+            text-align: left;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .support-text {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .support-contact {
+            margin: 25px 0;
+            font-size: 16px;
+        }
+
+        .support-link {
+            color: #33d6c9;
+            text-decoration: none;
+        }
+
+        .support-button {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .support-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-button {
+            background: rgba(255, 255, 255, 0.05);
+
+        }
+
+        .chat-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Стили для экрана "О нас" */
+        .about-container {
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+        }
+
+        .about-title {
+            font-size: 24px;
+            text-align: left;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .about-text {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .about-address {
+            margin: 25px 0;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .about-button {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .about-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        /* Стили для экрана AML проверки */
+        .aml-container {
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+        }
+
+        .aml-title {
+            font-size: 24px;
+            text-align: left;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .aml-subtitle {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .aml-field {
+            margin-bottom: 20px;
+        }
+
+        .aml-field-title {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .aml-field-input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+
+        .aml-checks-left {
+            font-size: 14px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .aml-notice {
+            font-size: 14px;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+
+        .aml-button {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .aml-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .check-button {
+            background: rgba(255, 255, 255, 0.05);
+
+        }
+
+        .check-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Стили для экрана биржи */
+        .mosca-container {
+            display: none;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            color: white;
+        }
+
+        .mosca-title {
+            font-size: 24px;
+            text-align: left;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .mosca-text {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .mosca-link {
+            color: #33d6c9;
+            font-size: 16px;
+            word-break: break-all;
+            display: block;
+            margin: 20px 0;
+            text-decoration: none;
+        }
+
+        .mosca-button {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .mosca-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+    </style>
 </head>
 <body>
-        <h1>sdasd</h1>
+    <div class="container main-container">
+        <div class="header">
+            <img src="mosca.png">
+        </div>
+
+        <div class="menu">
+            <button class="long-button" id="exchangeButton">Купить / Продать USDT</button>
+
+            <div class="square-buttons">
+                <button class="square-button" id="rateButton">Курс</button>
+                <button class="square-button">Все заявки</button>
+                <button class="square-button">Поддержка</button>
+                <button class="square-button">О нас</button>
+            </div>
+
+            <button class="long-button">AML проверка</button>
+            <button class="long-button">Биржа Mosca</button>
+        </div>
+    </div>
+    <!-- Экран курса -->
+    <div class="rate-container" id="rateContainer">
+        <div class="rate-title">КУРС USDT</div>
+
+        <div class="rate-values">
+            <div class="rate-value">
+                <div class="rate-type">Покупка</div>
+                <div class="rate-number" id="buyRate">79.85 RUB</div>
+            </div>
+            <div class="rate-value">
+                <div class="rate-type">Продажа</div>
+                <div class="rate-number" id="sellRate">77 RUB</div>
+            </div>
+        </div>
+
+        <div class="rate-checkbox">
+
+            <div>Данный курс является биржевым и меняется каждую минуту.</div>
+        </div>
+
+        <div class="rate-disclaimer">
+            Мы не берем никаких дополнительных комиссий с Вас.
+        </div>
+
+        <button class="rate-button" id="backButtonRate">Перейти на главный экран</button>
+    </div>
+    <!-- Экран обмена -->
+    <div class="exchange-container" id="exchangeContainer">
+        <div class="exchange-title">ОБМЕН</div>
+
+        <div class="exchange-options">
+            <button class="exchange-option active" id="buyOption">КУПИТЬ USDT</button>
+            <button class="exchange-option" id="sellOption">ПРОДАТЬ USDT</button>
+        </div>
+
+        <!-- Меню для покупки (соответствует изображению) -->
+        <div id="buyMenu">
+            <input type="text" class="exchange-input" placeholder="Введите сумму в рублях">
+
+            <hr class="exchange-divider">
+
+            <div class="exchange-section-title">Данные:</div>
+
+            <div class="exchange-field">
+                <div class="exchange-field-title">Фамилия*</div>
+                <input type="text" class="exchange-field-input">
+            </div>
+
+            <div class="exchange-field">
+                <div class="exchange-field-title">Имя*</div>
+                <input type="text" class="exchange-field-input">
+            </div>
+
+            <div class="exchange-field">
+                <div class="exchange-field-title">Отчество*</div>
+                <input type="text" class="exchange-field-input">
+            </div>
+
+            <div class="exchange-field">
+                <div class="exchange-field-title">Адрес кошелька TRC-20 (34 символа)*</div>
+                <input type="text" class="exchange-field-input">
+            </div>
+
+            <div class="exchange-checkbox">
+                <input type="checkbox" id="termsCheckBuy">
+                <label for="termsCheckBuy">Я прочитал правила и принимаю условия сервиса</label>
+            </div>
+
+            <button class="exchange-button">Создать заявку</button>
+            <button class="exchange-button" id="backButtonBuy">Перейти на главный экран</button>
+        </div>
+
+        <!-- Меню для продажи (оставлено прежним) -->
+        <div id="sellMenu" class="sell-menu">
+            <div class="exchange-section-title">Данные:</div>
+
+            <div class="exchange-field">
+                <div class="exchange-field-title">Фамилия*</div>
+                <input type="text" class="exchange-field-input">
+            </div>
+
+            <div class="exchange-field">
+                <div class="exchange-field-title">Имя*</div>
+                <input type="text" class="exchange-field-input">
+            </div>
+
+            <div class="exchange-field">
+                <div class="exchange-field-title">Отчество*</div>
+                <input type="text" class="exchange-field-input">
+            </div>
+
+            <div class="exchange-checkbox">
+                <input type="checkbox" id="termsCheckSell">
+                <label for="termsCheckSell">Я прочитал правила и принимаю условия сервиса</label>
+            </div>
+
+            <button class="exchange-button">Получить одноразовый кошелек</button>
+            <button class="exchange-button" id="backButtonSell">Перейти на главный экран</button>
+        </div>
+    </div>
+
+    <!-- Экран "Все заявки" -->
+    <div class="orders-container" id="ordersContainer">
+        <div class="orders-title">ВСЕ ЗАЯВКИ</div>
+
+        <div class="orders-empty">У вас пока нет заявок.</div>
+
+        <button class="orders-button" id="backButtonOrders">Перейти на главный экран</button>
+    </div>
+
+    <!-- Экран поддержки -->
+    <div class="support-container" id="supportContainer">
+        <div class="support-title">ПОДДЕРЖКА</div>
+
+        <div class="support-text">
+            Наши операторы на связи 24/7. Готовы ответить на любые вопросы.
+        </div>
+
+        <div class="support-text">
+            Для получения пропуска в наш офис и покупки USDT, вам нужно создать заявку через бота.
+        </div>
+
+        <div class="support-contact">
+            Для связи с нами напишите — <span class="support-link">@Mosca67_Support</span>
+        </div>
+
+        <button class="support-button chat-button" id="chatButton">Чат</button>
+        <button class="support-button" id="backButtonSupport">Перейти на главный экран</button>
+    </div>
+
+    <!-- Экран "О нас" -->
+    <div class="about-container" id="aboutContainer">
+        <div class="about-title">О НАС</div>
+
+        <div class="about-text">
+            Занимаемся обменом криптовалют более 3х лет.
+        </div>
+
+        <div class="about-text">
+            Работаем 24/7. При первом визите необходимо иметь паспорт.
+        </div>
+
+        <div class="about-text">
+            Работаем только за наличные рубли.
+        </div>
+
+        <div class="about-text">
+            Мы работаем стол в стол, т.е. не храним ваши средства у себя.
+        </div>
+
+        <div class="about-text">
+            У нас вы можете купить USDT без комиссии по самому лучшему курсу в Москве.
+        </div>
+
+        <div class="about-address">
+            Наш адрес:<br>
+            г. Москва, Пресненская набережная 12, Башня Федерация. Восток, этаж Tl
+        </div>
+
+        <div class="about-text">
+            Для получения пропуска к нам в офис и покупки USDT, вам нужно создать заявку через бота
+        </div>
+
+        <div class="about-text">
+            Гостевой пропуск выдается на ресепшене. На минус первом этаже с 8.00 до 19.00<br>
+            На первом этаже с 19.00 до 8.00.
+        </div>
+
+        <button class="about-button" id="backButtonAbout">Перейти на главный экран</button>
+    </div>
+
+    <!-- Экран AML проверки -->
+    <div class="aml-container" id="amlContainer">
+        <div class="aml-title">AML ПРОВЕРКА</div>
+
+        <div class="aml-subtitle">Введите кошелек для проверки</div>
+
+        <div class="aml-field">
+            <div class="aml-field-title">Адрес кошелька TRC-20 (34 символа)*</div>
+            <input type="text" class="aml-field-input" placeholder="Введите адрес кошелька">
+        </div>
+
+        <div class="aml-checks-left">Осталось проверок: 5</div>
+
+        <div class="aml-notice">
+            1. <strong>Внимание! Доступны 5 бесплатных проверок в месяц.</strong>
+        </div>
+
+        <button class="aml-button check-button">Проверить кошелек</button>
+        <button class="aml-button" id="backButtonAml">Перейти на главный экран</button>
+    </div>
+
+        <!-- Экран биржи Mosca -->
+    <div class="mosca-container" id="moscaExchangeContainer">
+        <div class="mosca-title">БИРЖА MOSCA</div>
+
+        <div class="mosca-text">
+            С радостью сообщаем вам об открытии криптовалютной биржи Mosca!
+        </div>
+
+        <a href="https://moscaex.org" class="mosca-link" target="_blank">https://moscaex.org</a>
+
+        <div class="mosca-text">
+            Мы стремимся предоставить нашим клиентам лучший сервис и надежные инструменты для успешной торговли.
+        </div>
+
+        <div class="mosca-text">
+            Наша команда всегда на связи! Присоединяйтесь к нам и откройте новые горизонты в мире криптовалют!
+        </div>
+
+        <button class="mosca-button" id="backButtonExchange">Перейти на главный экран</button>
+    </div>
+
+    <script>
+
+           document.getElementById('rateButton').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('rateContainer').style.display = 'block';
+            fetchExchangeRates(); // Загружаем актуальные курсы
+        });
+
+        document.getElementById('backButtonRate').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('rateContainer').style.display = 'none';
+        });
+
+        document.getElementById('exchangeButton').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('exchangeContainer').style.display = 'block';
+        });
+
+        document.getElementById('exchangeButton').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('exchangeContainer').style.display = 'block';
+        });
+
+        document.getElementById('backButtonBuy').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('exchangeContainer').style.display = 'none';
+        });
+
+        document.getElementById('backButtonSell').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('exchangeContainer').style.display = 'none';
+        });
+
+        // Переключение между покупкой и продажей
+        document.getElementById('buyOption').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('sellOption').classList.remove('active');
+            document.getElementById('buyMenu').style.display = 'block';
+            document.getElementById('sellMenu').style.display = 'none';
+        });
+
+        document.getElementById('sellOption').addEventListener('click', function() {
+            this.classList.add('active');
+            document.getElementById('buyOption').classList.remove('active');
+            document.getElementById('buyMenu').style.display = 'none';
+            document.getElementById('sellMenu').style.display = 'block';
+        });
+        async function fetchExchangeRates() {
+            try {
+                // Здесь можно использовать реальное API, например:
+                // const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                // const data = await response.json();
+                // const rubRate = data.rates.RUB;
+
+                // Для примера используем фиктивные данные
+                const buyRate = (Math.random() * 2 + 78).toFixed(1);
+                const sellRate = (buyRate - 2).toFixed(1);
+
+                document.getElementById('buyRate').textContent = `${buyRate} RUB`;
+                document.getElementById('sellRate').textContent = `${sellRate} RUB`;
+
+            } catch (error) {
+                console.error('Ошибка при получении курса:', error);
+                document.getElementById('buyRate').textContent = '79.8 RUB';
+                document.getElementById('sellRate').textContent = '77 RUB';
+            }
+        }
+
+        // Обработчик для кнопки "Все заявки"
+        document.querySelector('.square-buttons .square-button:nth-child(2)').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('ordersContainer').style.display = 'block';
+        });
+
+        // Обработчик для кнопки "Назад" в экране заявок
+        document.getElementById('backButtonOrders').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('ordersContainer').style.display = 'none';
+        });
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            // Можно сразу загрузить курсы
+            // fetchExchangeRates();
+        });
+
+        // Обработчик для кнопки "Поддержка"
+        document.querySelector('.square-buttons .square-button:nth-child(3)').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('supportContainer').style.display = 'block';
+        });
+
+        // Обработчик для кнопки "Назад" в экране поддержки
+        document.getElementById('backButtonSupport').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('supportContainer').style.display = 'none';
+        });
+
+        // Обработчик для кнопки "Чат"
+        document.getElementById('chatButton').addEventListener('click', function() {
+            window.open('https://t.me/Mosca67_Support', '_blank');
+        });
+
+        // Обработчик для кнопки "О нас"
+        document.querySelector('.square-buttons .square-button:nth-child(4)').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('aboutContainer').style.display = 'block';
+        });
+
+        // Обработчик для кнопки "Назад" в экране "О нас"
+        document.getElementById('backButtonAbout').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('aboutContainer').style.display = 'none';
+        });
+
+           // Обработчик для кнопки "AML проверка"
+        document.querySelector('.menu .long-button:nth-child(3)').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('amlContainer').style.display = 'block';
+        });
+
+        // Обработчик для кнопки "Назад" в экране AML проверки
+        document.getElementById('backButtonAml').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('amlContainer').style.display = 'none';
+});
+
+        // Обработчик для кнопки "Биржа Mosca"
+        document.querySelector('.menu .long-button:nth-child(4)').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'none';
+            document.getElementById('moscaExchangeContainer').style.display = 'block';
+        });
+
+        // Обработчик для кнопки "Назад" в экране биржи
+        document.getElementById('backButtonExchange').addEventListener('click', function() {
+            document.querySelector('.main-container').style.display = 'block';
+            document.getElementById('moscaExchangeContainer').style.display = 'none';
+        });
+
+    </script>
 </body>
 </html>
