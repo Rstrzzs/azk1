@@ -15,9 +15,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Конфигурация
-TOKEN = '8191840337:AAHnIR4r4NMFqeUxnQyuAM5Ruqsx1g3uJKQ'
-INFURA_URL = '01063d1643764a949d720d2ff4a8e3a6'
-AML_API_KEY = os.getenv('AML_API_KEY')
+TOKEN = 'APIKEY'
+INFURA_URL = 'APIKEY'
+
 
 # Инициализация бота
 bot = telebot.TeleBot(TOKEN)
