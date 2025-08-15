@@ -5,29 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mosca</title>
     <style>
+
+        .video-background {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1000;
+            overflow: hidden;
+            background: #013220; /* Зеленый фон на случай, если видео не загрузится */
+        }
+
+       #myVideo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1000;
+            transform: translateX(-50%) translateY(-50%);
+            object-fit: cover; /* Это обеспечит правильное масштабирование видео */
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+
+
         body {
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
             color: white;
             overflow-x: hidden;
-            background: linear-gradient(-45deg,#33d6c9, #013220, #013a33, #0f1f1a, #000000);
-            background-size: 400% 400%;
-            animation: gradient 15s ease infinite;
+
             min-height: 100vh;
         }
 
-        @keyframes gradient {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
 
         .container {
             max-width: 1200px;
@@ -550,10 +571,75 @@
         .mosca-button:hover {
             background: rgba(255, 255, 255, 0.1);
         }
+        .video-overlay {
+            position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(22, 34, 30, 0.9); /* Зелёный оттенок с прозрачностью */
+              backdrop-filter: blur(10px); /* Размытие фона */
+        }
+
+        .notification {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+
+        .notification.success {
+            background: rgba(46, 125, 50, 0.3);
+            border: 1px solid rgba(46, 125, 50, 0.5);
+        }
+
+        .notification.error {
+            background: rgba(211, 47, 47, 0.3);
+            border: 1px solid rgba(211, 47, 47, 0.5);
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+
+        #searchButton {
+            margin-bottom: 20px;
+        }
+
+        .order-status {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .order-details {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
 
     </style>
 </head>
 <body>
+   <div class="video-background">
+    <video autoplay muted loop playsinline  id="myVideo">
+        <source src="video.mp4" type="video/mp4">
+    </video>
+    <div class="video-overlay"></div> <!-- Добавьте этот div -->
+</div>
+
+   <div class="MuiBox-root css-vztkwe"><svg width="430" height="57" viewBox="0 0 430 57" fill="none" xmlns="http://www.w3.org/2000/svg"><ellipse cx="215" cy="0.5" rx="215" ry="56.5" fill="url(#paint0_radial_2_196)"></ellipse><defs><radialGradient id="paint0_radial_2_196" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(214.3 0.499997) scale(215.7 56.684)"><stop stop-color="#579883"></stop><stop offset="1" stop-color="#2B473E" stop-opacity="0"></stop></radialGradient></defs></svg></div>
+
+
+
     <div class="container main-container">
         <div class="header">
             <img src="mosca.png">
@@ -569,8 +655,7 @@
                 <button class="square-button">О нас</button>
             </div>
 
-            <button class="long-button">AML проверка</button>
-            <button class="long-button">Биржа Mosca</button>
+
         </div>
     </div>
     <!-- Экран курса -->
@@ -610,7 +695,7 @@
 
         <!-- Меню для покупки (соответствует изображению) -->
         <div id="buyMenu">
-            <input type="text" class="exchange-input" placeholder="Введите сумму в рублях">
+            <input type="text" id="amountInput" class="exchange-input" placeholder="Введите сумму в рублях">
 
             <hr class="exchange-divider">
 
@@ -618,22 +703,22 @@
 
             <div class="exchange-field">
                 <div class="exchange-field-title">Фамилия*</div>
-                <input type="text" class="exchange-field-input">
+                <input type="text" id="lastNameInput" class="exchange-field-input">
             </div>
 
             <div class="exchange-field">
                 <div class="exchange-field-title">Имя*</div>
-                <input type="text" class="exchange-field-input">
+                <input type="text" id="firstNameInput" class="exchange-field-input">
             </div>
 
             <div class="exchange-field">
-                <div class="exchange-field-title">Отчество*</div>
-                <input type="text" class="exchange-field-input">
+                <div class="exchange-field-title">Telegram username*</div>
+                <input type="text" id="middleNameInput" class="exchange-field-input">
             </div>
 
             <div class="exchange-field">
                 <div class="exchange-field-title">Адрес кошелька TRC-20 (34 символа)*</div>
-                <input type="text" class="exchange-field-input">
+                <input type="text" id="walletInput" class="exchange-field-input">
             </div>
 
             <div class="exchange-checkbox">
@@ -641,7 +726,10 @@
                 <label for="termsCheckBuy">Я прочитал правила и принимаю условия сервиса</label>
             </div>
 
-            <button class="exchange-button">Создать заявку</button>
+            <div class="notification" id="notification" style="display: none;"></div>
+
+
+            <button class="exchange-button" id="createOrderBtn">Создать заявку</button>
             <button class="exchange-button" id="backButtonBuy">Перейти на главный экран</button>
         </div>
 
@@ -651,17 +739,17 @@
 
             <div class="exchange-field">
                 <div class="exchange-field-title">Фамилия*</div>
-                <input type="text" class="exchange-field-input">
+                <input type="text" class="exchange-field-input" id ="lastNameInputSale" >
             </div>
 
             <div class="exchange-field">
                 <div class="exchange-field-title">Имя*</div>
-                <input type="text" class="exchange-field-input">
+                <input type="text" class="exchange-field-input" id = "firstNameInputSale">
             </div>
 
             <div class="exchange-field">
-                <div class="exchange-field-title">Отчество*</div>
-                <input type="text" class="exchange-field-input">
+                <div class="exchange-field-title">Telegram username*</div>
+                <input type="text" class="exchange-field-input" id = "middleNameInputSale">
             </div>
 
             <div class="exchange-checkbox">
@@ -669,7 +757,9 @@
                 <label for="termsCheckSell">Я прочитал правила и принимаю условия сервиса</label>
             </div>
 
-            <button class="exchange-button">Получить одноразовый кошелек</button>
+
+            <div class="notification" id="notificationSale" style="display: none;"></div>
+            <button class="exchange-button" id="createOrderBtnSale">Получить одноразовый кошелек</button>
             <button class="exchange-button" id="backButtonSell">Перейти на главный экран</button>
         </div>
     </div>
@@ -678,7 +768,13 @@
     <div class="orders-container" id="ordersContainer">
         <div class="orders-title">ВСЕ ЗАЯВКИ</div>
 
-        <div class="orders-empty">У вас пока нет заявок.</div>
+        <input type="text" id="searchInput" class="exchange-input" placeholder="Введите номер заявки или адрес кошелька">
+        <button class="orders-button" id="searchButton">Найти заявку</button>
+
+        <div id="orderResult" style="margin-top: 20px; display: none;">
+            <div class="order-status" style="font-size: 18px; margin-bottom: 10px;"></div>
+            <div class="order-details" style="font-size: 14px;"></div>
+        </div>
 
         <button class="orders-button" id="backButtonOrders">Перейти на главный экран</button>
     </div>
@@ -744,47 +840,24 @@
         <button class="about-button" id="backButtonAbout">Перейти на главный экран</button>
     </div>
 
-    <!-- Экран AML проверки -->
-    <div class="aml-container" id="amlContainer">
-        <div class="aml-title">AML ПРОВЕРКА</div>
 
-        <div class="aml-subtitle">Введите кошелек для проверки</div>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-database-compat.js"></script>
 
-        <div class="aml-field">
-            <div class="aml-field-title">Адрес кошелька TRC-20 (34 символа)*</div>
-            <input type="text" class="aml-field-input" placeholder="Введите адрес кошелька">
-        </div>
-
-        <div class="aml-checks-left">Осталось проверок: 5</div>
-
-        <div class="aml-notice">
-            1. <strong>Внимание! Доступны 5 бесплатных проверок в месяц.</strong>
-        </div>
-
-        <button class="aml-button check-button">Проверить кошелек</button>
-        <button class="aml-button" id="backButtonAml">Перейти на главный экран</button>
-    </div>
-
-        <!-- Экран биржи Mosca -->
-    <div class="mosca-container" id="moscaExchangeContainer">
-        <div class="mosca-title">БИРЖА MOSCA</div>
-
-        <div class="mosca-text">
-            С радостью сообщаем вам об открытии криптовалютной биржи Mosca!
-        </div>
-
-        <a href="https://moscaex.org" class="mosca-link" target="_blank">https://moscaex.org</a>
-
-        <div class="mosca-text">
-            Мы стремимся предоставить нашим клиентам лучший сервис и надежные инструменты для успешной торговли.
-        </div>
-
-        <div class="mosca-text">
-            Наша команда всегда на связи! Присоединяйтесь к нам и откройте новые горизонты в мире криптовалют!
-        </div>
-
-        <button class="mosca-button" id="backButtonExchange">Перейти на главный экран</button>
-    </div>
+    <script>
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyCVwEqDhZ1PWrJNycW0QIrtK-HUKFEdcws",
+          authDomain: "mosvca-c81cc.firebaseapp.com",
+          projectId: "mosvca-c81cc",
+          storageBucket: "mosvca-c81cc.firebasestorage.app",
+          messagingSenderId: "929517510680",
+          appId: "1:929517510680:web:fdd55587b485af4358e36d",
+          measurementId: "G-RFW682CENX"
+        };
+         firebase.initializeApp(firebaseConfig);
+         const database = firebase.database();
+    </script>
 
     <script>
 
@@ -901,29 +974,228 @@
             document.getElementById('aboutContainer').style.display = 'none';
         });
 
-           // Обработчик для кнопки "AML проверка"
-        document.querySelector('.menu .long-button:nth-child(3)').addEventListener('click', function() {
-            document.querySelector('.main-container').style.display = 'none';
-            document.getElementById('amlContainer').style.display = 'block';
-        });
+        //
+// Находим кнопку и добавляем обработчик
+document.getElementById('createOrderBtn').addEventListener('click', createOrder);
 
-        // Обработчик для кнопки "Назад" в экране AML проверки
-        document.getElementById('backButtonAml').addEventListener('click', function() {
-            document.querySelector('.main-container').style.display = 'block';
-            document.getElementById('amlContainer').style.display = 'none';
+// Функция для создания заявки
+function createOrder() {
+    // Получаем значения из полей
+const lastName = document.getElementById('lastNameInput').value.trim();
+const firstName = document.getElementById('firstNameInput').value.trim();
+const username_telegram = document.getElementById('middleNameInput').value.trim();
+const walletAddress = document.getElementById('walletInput').value.trim();
+const amount = document.getElementById('amountInput').value.trim();
+
+    // Проверяем заполнение полей
+    if (!lastName || !firstName || !username_telegram || !walletAddress || !amount) {
+        showNotification('Заполните все поля!', 'error');
+        return;
+    }
+
+
+
+    // Проверяем, что сумма - число
+    if (isNaN(amount)) {
+        showNotification('Введите корректную сумму!', 'error');
+        return;
+    }
+
+    // Создаем объект заявки
+    const orderData = {
+        lastName,
+        firstName,
+        username_telegram,
+        walletAddress,
+        amount: parseFloat(amount),
+        timestamp: new Date().toISOString(),
+        status: "pending" // "pending", "completed", "rejected"
+    };
+
+    // Отправляем в Firebase
+    sendOrderToFirebase(orderData);
+}
+
+// Функция для отправки данных в Firebase
+function sendOrderToFirebase(orderData) {
+    const ordersRef = firebase.database().ref('orders');
+
+    ordersRef.push(orderData)
+        .then(() => {
+            showNotification('Заявка успешно создана!', 'success');
+            // Очищаем поля (опционально)
+            clearForm();
+        })
+        .catch((error) => {
+            console.error("Ошибка отправки заявки:", error);
+            showNotification('Ошибка при создании заявки!', 'error');
+        });
+}
+
+// Функция для показа уведомлений
+function showNotification(message, type) {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.style.display = 'block';
+
+    // Скрываем уведомление через 3 секунды
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+// Очистка формы после отправки
+function clearForm() {
+    document.querySelector('#buyMenu .exchange-input').value = '';
+    const inputs = document.querySelectorAll('#buyMenu .exchange-field-input');
+    inputs.forEach(input => input.value = '');
+    document.getElementById('termsCheckBuy').checked = false;
+}
+
+
+        /////////////
+        document.getElementById('createOrderBtnSale').addEventListener('click', createOrderSale);
+
+// Функция для создания заявки
+function createOrderSale() {
+    // Получаем значения из полей
+const lastName = document.getElementById('lastNameInputSale').value.trim();
+const firstName = document.getElementById('firstNameInputSale').value.trim();
+const username_telegram = document.getElementById('middleNameInputSale').value.trim();
+
+
+    // Проверяем заполнение полей
+    if (!lastName || !firstName || !username_telegram) {
+        showNotification('Заполните все поля!', 'error');
+        return;
+    }
+
+
+    // Создаем объект заявки
+    const orderDataSale = {
+        lastName,
+        firstName,
+        username_telegram,
+        timestamp: new Date().toISOString(),
+        status: "pending" // "pending", "completed", "rejected"
+    };
+
+    // Отправляем в Firebase
+    sendOrderToFirebase(orderDataSale);
+}
+
+// Функция для отправки данных в Firebase
+function sendOrderToFirebase(orderDataSale) {
+    const ordersRefSale = firebase.database().ref('ordersSale');
+
+    ordersRefSale.push(orderDataSale)
+        .then(() => {
+            showNotification('Заявка успешно создана!', 'success');
+            // Очищаем поля (опционально)
+            clearForm();
+        })
+        .catch((error) => {
+            console.error("Ошибка отправки заявки:", error);
+            showNotification('Ошибка при создании заявки!', 'error');
+        });
+}
+
+// Функция для показа уведомлений
+function showNotification(message, type) {
+    const notification = document.getElementById('notificationSale');
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.style.display = 'block';
+
+    // Скрываем уведомление через 3 секунды
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 3000);
+}
+
+// Очистка формы после отправки
+function clearForm() {
+    document.querySelector('#buyMenu .exchange-input').value = '';
+    const inputs = document.querySelectorAll('#buyMenu .exchange-field-input');
+    inputs.forEach(input => input.value = '');
+    document.getElementById('termsCheckBuy').checked = false;
+}
+
+        // все заявки
+        document.querySelector('.square-buttons .square-button:nth-child(2)').addEventListener('click', function() {
+    document.querySelector('.main-container').style.display = 'none';
+    document.getElementById('ordersContainer').style.display = 'block';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('orderResult').style.display = 'none';
 });
 
-        // Обработчик для кнопки "Биржа Mosca"
-        document.querySelector('.menu .long-button:nth-child(4)').addEventListener('click', function() {
-            document.querySelector('.main-container').style.display = 'none';
-            document.getElementById('moscaExchangeContainer').style.display = 'block';
-        });
+document.getElementById('searchButton').addEventListener('click', function() {
+    const searchQuery = document.getElementById('searchInput').value.trim();
 
-        // Обработчик для кнопки "Назад" в экране биржи
-        document.getElementById('backButtonExchange').addEventListener('click', function() {
-            document.querySelector('.main-container').style.display = 'block';
-            document.getElementById('moscaExchangeContainer').style.display = 'none';
+    if (!searchQuery) {
+        showNotification('Введите данные для поиска', 'error');
+        return;
+    }
+
+    searchOrderInFirebase(searchQuery);
+});
+
+function searchOrderInFirebase(query) {
+    const ordersRef = firebase.database().ref('orders');
+    const orderResult = document.getElementById('orderResult');
+    const statusElement = orderResult.querySelector('.order-status');
+    const detailsElement = orderResult.querySelector('.order-details');
+
+    orderResult.style.display = 'none';
+
+    // Поиск по номеру кошелька или другим полям
+    ordersRef.orderByChild('walletAddress').equalTo(query).once('value')
+        .then(snapshot => {
+            if (!snapshot.exists()) {
+                // Если не найдено по кошельку, ищем по другим полям
+                return ordersRef.orderByChild('timestamp').once('value');
+            }
+            return snapshot;
+        })
+        .then(snapshot => {
+            let found = false;
+
+            snapshot.forEach(childSnapshot => {
+                const order = childSnapshot.val();
+
+                // Проверяем все поля на совпадение
+                if (order.walletAddress.includes(query) ||
+                    childSnapshot.key.includes(query) ||
+                    order.lastName.includes(query) ||
+                    order.firstName.includes(query)) {
+
+                    statusElement.textContent = `Статус заявки: ${order.status || 'неизвестен'}`;
+                    statusElement.style.color = order.status === 'completed' ? '#4CAF50' :
+                                               order.status === 'rejected' ? '#F44336' : '#FFC107';
+
+                    detailsElement.innerHTML = `
+                        <p>Номер: ${childSnapshot.key}</p>
+                        <p>ФИО: ${order.lastName} ${order.firstName} ${order.middleName || ''}</p>
+                        <p>Кошелек: ${order.walletAddress}</p>
+                        <p>Сумма: ${order.amount} USDT</p>
+                        <p>Дата: ${new Date(order.timestamp).toLocaleString()}</p>
+                    `;
+
+                    orderResult.style.display = 'block';
+                    found = true;
+                }
+            });
+
+            if (!found) {
+                showNotification('Заявка не найдена', 'error');
+            }
+        })
+        .catch(error => {
+            console.error("Ошибка поиска:", error);
+            showNotification('Ошибка при поиске заявки', 'error');
         });
+}
 
     </script>
 </body>
