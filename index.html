@@ -799,6 +799,25 @@
   cursor: pointer;
   margin-top: 10px;
 }
+        .admin-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 200, 0, 0.8);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  z-index: 1000;
+  animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
@@ -1486,23 +1505,55 @@ async function loadBuyOrders(page = 1, limit = 10) {
 
 // Аналогичная функция для заказов на продажу (loadSellOrders)
 // ...
+async function loadSellOrders(page = 1, limit = 10) {
+  const ordersRef = firebase.database().ref('ordersSale');
+  const snapshot = await ordersRef.once('value');
+  const orders = snapshot.val();
 
+  const ordersList = document.getElementById('sellOrdersList');
+  ordersList.innerHTML = '';
+
+  if (!orders) {
+    ordersList.innerHTML = '<p>Нет заявок на продажу</p>';
+    return;
+  }
+    Object.entries(orders).forEach(([id, order]) => {
+    const orderItem = document.createElement('div');
+    orderItem.className = 'admin-order-item';
+    orderItem.innerHTML = `
+      <div>
+        <strong>${order.firstNameSale} ${order.lastNameSale}</strong>
+        <span class="admin-order-status status-${order.status || 'pending'}">
+          ${order.status || 'pending'}
+        </span>
+      </div>
+      <div>@${order.username_telegramSale}</div>
+      <div>${new Date(order.timestamp).toLocaleString()}</div>
+    `;
+    orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
+    ordersList.appendChild(orderItem);
+  });
+}
 // Показ деталей заказа
 function showOrderDetails(id, order, type) {
+  const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+  const currentAdmin = tgUser?.username ? `@${tgUser.username}` : 'админ';
+
   const modal = document.createElement('div');
   modal.className = 'admin-modal';
   modal.innerHTML = `
     <div class="admin-modal-content">
       <h3>Заявка ${id}</h3>
       <p><strong>Статус:</strong> ${order.status || 'pending'}</p>
-      <p><strong>Имя:</strong> ${order.firstName}</p>
-      <p><strong>Фамилия:</strong> ${order.lastName}</p>
-      ${type === 'buy' ? `<p><strong>Кошелек:</strong> ${order.walletAddress}</p>` : ''}
+      <p><strong>Имя:</strong> ${order.firstName || order.firstNameSale}</p>
+      <p><strong>Фамилия:</strong> ${order.lastName || order.lastNameSale}</p>
+      ${order.walletAddress ? `<p><strong>Кошелек:</strong> ${order.walletAddress}</p>` : ''}
       ${order.amount ? `<p><strong>Сумма:</strong> ${order.amount} USDT</p>` : ''}
+      <p><strong>Telegram:</strong> @${order.username_telegram || order.username_telegramSale}</p>
       <p><strong>Дата:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
 
       <div class="admin-actions">
-        <button class="status-btn" data-status="processing">В обработку</button>
+        <button class="status-btn" data-status="processing">В обработку (${currentAdmin})</button>
         <button class="status-btn" data-status="completed">Завершить</button>
         <button class="status-btn" data-status="cancelled">Отменить</button>
         <button class="delete-btn">Удалить</button>
@@ -1511,6 +1562,28 @@ function showOrderDetails(id, order, type) {
     </div>
   `;
 
+  document.body.appendChild(modal);
+
+  modal.querySelectorAll('.status-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      let status = btn.dataset.status;
+
+      // Если статус "в обработку", добавляем имя админа
+      if (status === 'processing' && tgUser?.username) {
+        status = `В обработке @${tgUser.username}`;
+      }
+
+      await updateOrderStatus(id, status, type);
+      modal.remove();
+
+      // Обновляем список заказов
+      if (type === 'buy') loadBuyOrders();
+      else loadSellOrders();
+    });
+  });
+
+  // ... остальные обработчики ...
+}
   document.body.appendChild(modal);
 
   // Обработчики для кнопок
@@ -1533,10 +1606,20 @@ function showOrderDetails(id, order, type) {
 
 // Обновление статуса заказа
 async function updateOrderStatus(id, status, type) {
-  const refPath = type === 'buy' ? 'orders' : 'ordersSale';
-  await firebase.database().ref(`${refPath}/${id}`).update({ status });
-  if (type === 'buy') loadBuyOrders();
-  else loadSellOrders();
+  try {
+    const refPath = type === 'buy' ? 'orders' : 'ordersSale';
+    await firebase.database().ref(`${refPath}/${id}/status`).set(status);
+
+    // Показываем уведомление
+    const notification = document.createElement('div');
+    notification.className = 'admin-notification';
+    notification.textContent = 'Статус обновлен!';
+    document.body.appendChild(notification);
+
+    setTimeout(() => notification.remove(), 2000);
+  } catch (error) {
+    console.error('Ошибка обновления статуса:', error);
+  }
 }
 
 // Удаление заказа
@@ -1592,6 +1675,29 @@ document.getElementById('addAdminBtn').addEventListener('click', async () => {
   } catch (error) {
     console.error('Error adding admin:', error);
   }
+});
+        // Слушатель изменений в реальном времени
+function setupRealtimeListeners() {
+  // Для заказов на покупку
+  firebase.database().ref('orders').on('value', () => {
+    if (document.getElementById('adminContainer').style.display === 'block' &&
+        document.getElementById('buy-orders').style.display === 'block') {
+      loadBuyOrders();
+    }
+  });
+
+  // Для заказов на продажу
+  firebase.database().ref('ordersSale').on('value', () => {
+    if (document.getElementById('adminContainer').style.display === 'block' &&
+        document.getElementById('sell-orders').style.display === 'block') {
+      loadSellOrders();
+    }
+  });
+}
+
+// Вызываем при загрузке
+document.addEventListener('DOMContentLoaded', () => {
+  setupRealtimeListeners();
 });
     </script>
 
