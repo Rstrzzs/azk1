@@ -768,7 +768,7 @@
     <div class="orders-container" id="ordersContainer">
         <div class="orders-title">ВСЕ ЗАЯВКИ</div>
 
-        <input type="text" id="searchInput" class="exchange-input" placeholder="Введите номер заявки или адрес кошелька">
+        <input type="text" id="searchInput" class="exchange-field-input" placeholder="Введите номер заявки или адрес кошелька">
         <button class="orders-button" id="searchButton">Найти заявку</button>
 
         <div id="orderResult" style="margin-top: 20px; display: none;">
@@ -1060,13 +1060,13 @@ function clearForm() {
 // Функция для создания заявки
 function createOrderSale() {
     // Получаем значения из полей
-const lastName = document.getElementById('lastNameInputSale').value.trim();
-const firstName = document.getElementById('firstNameInputSale').value.trim();
-const username_telegram = document.getElementById('middleNameInputSale').value.trim();
+const lastNameSale = document.getElementById('lastNameInputSale').value.trim();
+const firstNameSale = document.getElementById('firstNameInputSale').value.trim();
+const username_telegramSale = document.getElementById('middleNameInputSale').value.trim();
 
 
     // Проверяем заполнение полей
-    if (!lastName || !firstName || !username_telegram) {
+    if (!lastNameSale || !firstNameSale || !username_telegramSale) {
         showNotification('Заполните все поля!', 'error');
         return;
     }
@@ -1074,35 +1074,35 @@ const username_telegram = document.getElementById('middleNameInputSale').value.t
 
     // Создаем объект заявки
     const orderDataSale = {
-        lastName,
-        firstName,
-        username_telegram,
+        lastNameSale,
+        firstNameSale,
+        username_telegramSale,
         timestamp: new Date().toISOString(),
         status: "pending" // "pending", "completed", "rejected"
     };
 
     // Отправляем в Firebase
-    sendOrderToFirebase(orderDataSale);
+    sendOrderSaleToFirebase(orderDataSale);
 }
 
 // Функция для отправки данных в Firebase
-function sendOrderToFirebase(orderDataSale) {
+function sendOrderSaleToFirebase(orderDataSale) {
     const ordersRefSale = firebase.database().ref('ordersSale');
 
     ordersRefSale.push(orderDataSale)
         .then(() => {
-            showNotification('Заявка успешно создана!', 'success');
+            showNotificationSale('Заявка успешно создана!', 'success');
             // Очищаем поля (опционально)
-            clearForm();
+            clearFormSale();
         })
         .catch((error) => {
             console.error("Ошибка отправки заявки:", error);
-            showNotification('Ошибка при создании заявки!', 'error');
+            showNotificationSale('Ошибка при создании заявки!', 'error');
         });
 }
 
 // Функция для показа уведомлений
-function showNotification(message, type) {
+function showNotificationSale(message, type) {
     const notification = document.getElementById('notificationSale');
     notification.textContent = message;
     notification.className = `notification ${type}`;
@@ -1115,7 +1115,7 @@ function showNotification(message, type) {
 }
 
 // Очистка формы после отправки
-function clearForm() {
+function clearFormSale() {
     document.querySelector('#buyMenu .exchange-input').value = '';
     const inputs = document.querySelectorAll('#buyMenu .exchange-field-input');
     inputs.forEach(input => input.value = '');
