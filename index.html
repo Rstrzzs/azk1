@@ -818,6 +818,34 @@
   80% { opacity: 1; }
   100% { opacity: 0; }
 }
+    .admin-notification {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  z-index: 1000;
+  animation: fadeInOut 3s ease-in-out;
+  opacity: 0;
+}
+
+.admin-notification.success {
+  background: rgba(46, 125, 50, 0.9);
+}
+
+.admin-notification.error {
+  background: rgba(211, 47, 47, 0.9);
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
@@ -1505,103 +1533,112 @@ async function loadBuyOrders(page = 1, limit = 10) {
 
 // Аналогичная функция для заказов на продажу (loadSellOrders)
 // ...
+// Загрузка заявок на продажу (исправленная версия)
 async function loadSellOrders(page = 1, limit = 10) {
-  const ordersRef = firebase.database().ref('ordersSale');
-  const snapshot = await ordersRef.once('value');
-  const orders = snapshot.val();
+  try {
+    const ordersRef = firebase.database().ref('ordersSale');
+    const snapshot = await ordersRef.once('value');
+    const orders = snapshot.val();
 
-  const ordersList = document.getElementById('sellOrdersList');
-  ordersList.innerHTML = '';
+    const ordersList = document.getElementById('sellOrdersList');
+    if (!ordersList) return;
 
-  if (!orders) {
-    ordersList.innerHTML = '<p>Нет заявок на продажу</p>';
-    return;
-  }
+    ordersList.innerHTML = '';
+
+    if (!orders) {
+      ordersList.innerHTML = '<p>Нет заявок на продажу</p>';
+      return;
+    }
+
     Object.entries(orders).forEach(([id, order]) => {
-    const orderItem = document.createElement('div');
-    orderItem.className = 'admin-order-item';
-    orderItem.innerHTML = `
-      <div>
-        <strong>${order.firstNameSale} ${order.lastNameSale}</strong>
-        <span class="admin-order-status status-${order.status || 'pending'}">
-          ${order.status || 'pending'}
-        </span>
-      </div>
-      <div>@${order.username_telegramSale}</div>
-      <div>${new Date(order.timestamp).toLocaleString()}</div>
-    `;
-    orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
-    ordersList.appendChild(orderItem);
-  });
+      const orderItem = document.createElement('div');
+      orderItem.className = 'admin-order-item';
+      orderItem.innerHTML = `
+        <div>
+          <strong>${order.firstNameSale || ''} ${order.lastNameSale || ''}</strong>
+          <span class="admin-order-status status-${order.status ? order.status.toLowerCase().replace(' ', '-') : 'pending'}">
+            ${order.status || 'pending'}
+          </span>
+        </div>
+        <div>@${order.username_telegramSale || ''}</div>
+        <div>${order.timestamp ? new Date(order.timestamp).toLocaleString() : ''}</div>
+      `;
+      orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
+      ordersList.appendChild(orderItem);
+    });
+  } catch (error) {
+    console.error('Ошибка загрузки заявок на продажу:', error);
+  }
 }
 // Показ деталей заказа
 function showOrderDetails(id, order, type) {
-  const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
-  const currentAdmin = tgUser?.username ? `@${tgUser.username}` : 'админ';
+  try {
+    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    const currentAdmin = tgUser?.username ? `@${tgUser.username}` : 'админ';
 
-  const modal = document.createElement('div');
-  modal.className = 'admin-modal';
-  modal.innerHTML = `
-    <div class="admin-modal-content">
-      <h3>Заявка ${id}</h3>
-      <p><strong>Статус:</strong> ${order.status || 'pending'}</p>
-      <p><strong>Имя:</strong> ${order.firstName || order.firstNameSale}</p>
-      <p><strong>Фамилия:</strong> ${order.lastName || order.lastNameSale}</p>
-      ${order.walletAddress ? `<p><strong>Кошелек:</strong> ${order.walletAddress}</p>` : ''}
-      ${order.amount ? `<p><strong>Сумма:</strong> ${order.amount} USDT</p>` : ''}
-      <p><strong>Telegram:</strong> @${order.username_telegram || order.username_telegramSale}</p>
-      <p><strong>Дата:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
+    const modal = document.createElement('div');
+    modal.className = 'admin-modal';
+    modal.innerHTML = `
+      <div class="admin-modal-content">
+        <h3>Заявка ${id}</h3>
+        <p><strong>Статус:</strong> ${order.status || 'pending'}</p>
+        <p><strong>Имя:</strong> ${order.firstName || order.firstNameSale || 'не указано'}</p>
+        <p><strong>Фамилия:</strong> ${order.lastName || order.lastNameSale || 'не указано'}</p>
+        ${order.walletAddress ? `<p><strong>Кошелек:</strong> ${order.walletAddress}</p>` : ''}
+        ${order.amount ? `<p><strong>Сумма:</strong> ${order.amount} USDT</p>` : ''}
+        <p><strong>Telegram:</strong> @${order.username_telegram || order.username_telegramSale || 'не указан'}</p>
+        <p><strong>Дата:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : 'не указана'}</p>
 
-      <div class="admin-actions">
-        <button class="status-btn" data-status="processing">В обработку (${currentAdmin})</button>
-        <button class="status-btn" data-status="completed">Завершить</button>
-        <button class="status-btn" data-status="cancelled">Отменить</button>
-        <button class="delete-btn">Удалить</button>
+        <div class="admin-actions">
+          <button class="status-btn" data-status="processing">В обработку (${currentAdmin})</button>
+          <button class="status-btn" data-status="completed">Завершить</button>
+          <button class="status-btn" data-status="cancelled">Отменить</button>
+          <button class="delete-btn">Удалить</button>
+        </div>
+        <button class="close-modal">Закрыть</button>
       </div>
-      <button class="close-modal">Закрыть</button>
-    </div>
-  `;
+    `;
 
-  document.body.appendChild(modal);
+    document.body.appendChild(modal);
 
-  modal.querySelectorAll('.status-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      let status = btn.dataset.status;
+    // Обработчики событий для кнопок
+    modal.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        let status = btn.dataset.status;
 
-      // Если статус "в обработку", добавляем имя админа
-      if (status === 'processing' && tgUser?.username) {
-        status = `В обработке @${tgUser.username}`;
+        if (status === 'processing' && tgUser?.username) {
+          status = `В обработке @${tgUser.username}`;
+        }
+
+        await updateOrderStatus(id, status, type);
+        modal.remove();
+
+        // Обновляем соответствующий список
+        if (type === 'buy') {
+          await loadBuyOrders();
+        } else {
+          await loadSellOrders();
+        }
+      });
+    });
+
+    modal.querySelector('.delete-btn').addEventListener('click', async () => {
+      await deleteOrder(id, type);
+      modal.remove();
+      if (type === 'buy') {
+        await loadBuyOrders();
+      } else {
+        await loadSellOrders();
       }
-
-      await updateOrderStatus(id, status, type);
-      modal.remove();
-
-      // Обновляем список заказов
-      if (type === 'buy') loadBuyOrders();
-      else loadSellOrders();
     });
-  });
 
-  // ... остальные обработчики ...
-}
-  document.body.appendChild(modal);
-
-  // Обработчики для кнопок
-  modal.querySelectorAll('.status-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      updateOrderStatus(id, btn.dataset.status, type);
+    modal.querySelector('.close-modal').addEventListener('click', () => {
       modal.remove();
     });
-  });
 
-  modal.querySelector('.delete-btn').addEventListener('click', () => {
-    deleteOrder(id, type);
-    modal.remove();
-  });
-
-  modal.querySelector('.close-modal').addEventListener('click', () => {
-    modal.remove();
-  });
+  } catch (error) {
+    console.error('Ошибка при отображении деталей заказа:', error);
+  }
 }
 
 // Обновление статуса заказа
@@ -1699,6 +1736,88 @@ function setupRealtimeListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   setupRealtimeListeners();
 });
+        async function initAdminPanel() {
+  try {
+    const isAdmin = await checkAdmin();
+    if (isAdmin) {
+      document.getElementById('adminButton').style.display = 'block';
+
+      // Обработчик для кнопки админ-панели
+      document.getElementById('adminButton').addEventListener('click', async () => {
+        document.querySelector('.main-container').style.display = 'none';
+        document.getElementById('adminContainer').style.display = 'block';
+        await loadBuyOrders();
+      });
+
+      // Обработчик для кнопки "Назад"
+      document.getElementById('backButtonAdmin').addEventListener('click', () => {
+        document.querySelector('.main-container').style.display = 'block';
+        document.getElementById('adminContainer').style.display = 'none';
+      });
+
+      // Переключение вкладок
+      document.querySelectorAll('.admin-tab').forEach(tab => {
+        tab.addEventListener('click', async function() {
+          document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+
+          document.querySelectorAll('.admin-tab-content').forEach(c => {
+            c.style.display = 'none';
+          });
+
+          const tabId = this.dataset.tab;
+          document.getElementById(tabId).style.display = 'block';
+
+          if (tabId === 'buy-orders') {
+            await loadBuyOrders();
+          } else if (tabId === 'sell-orders') {
+            await loadSellOrders();
+          } else if (tabId === 'admins') {
+            await loadAdmins();
+          }
+        });
+      });
+
+      // Инициализация слушателей реального времени
+      setupRealtimeListeners();
+    }
+  } catch (error) {
+    console.error('Ошибка инициализации админ-панели:', error);
+  }
+}
+
+// Вызов инициализации при загрузке
+document.addEventListener('DOMContentLoaded', initAdminPanel);
+        async function updateOrderStatus(id, status, type) {
+  try {
+    const refPath = type === 'buy' ? 'orders' : 'ordersSale';
+    await firebase.database().ref(`${refPath}/${id}/status`).set(status);
+    showAdminNotification('Статус успешно обновлен!', 'success');
+  } catch (error) {
+    console.error(`Ошибка при обновлении статуса заявки ${id}:`, error);
+    showAdminNotification('Ошибка при обновлении статуса!', 'error');
+  }
+}
+
+async function deleteOrder(id, type) {
+  try {
+    const refPath = type === 'buy' ? 'orders' : 'ordersSale';
+    await firebase.database().ref(`${refPath}/${id}`).remove();
+    showAdminNotification('Заявка успешно удалена!', 'success');
+  } catch (error) {
+    console.error(`Ошибка при удалении заявки ${id}:`, error);
+    showAdminNotification('Ошибка при удалении заявки!', 'error');
+  }
+}
+
+function showAdminNotification(message, type) {
+  const notification = document.createElement('div');
+  notification.className = `admin-notification ${type}`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+
+  setTimeout(() => notification.remove(), 3000);
+}
     </script>
 
 </body>
