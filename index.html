@@ -1764,7 +1764,7 @@ async function loadUserOrders() {
     try {
         // Ищем заявки в обоих разделах
         const [buyOrdersSnapshot, sellOrdersSnapshot] = await Promise.all([
-            firebase.database().ref('orders').orderByChild('username_telegram').equalTo(`@${username}`).once('value'),
+            firebase.database().ref('orders').orderByChild('username_telegram').equalTo(username).once('value'),
             firebase.database().ref('ordersSale').orderByChild('username_telegramSale').equalTo(username).once('value')
         ]);
 
