@@ -1420,7 +1420,7 @@ document.querySelectorAll('.admin-tab').forEach(tab => {
   });
 });
 
-// Загрузка заказов на покупку
+// Загрузка заказов на покупку (с сортировкой от новых к старым)
 async function loadBuyOrders(page = 1, limit = 10) {
   const ordersRef = firebase.database().ref('orders');
   const snapshot = await ordersRef.once('value');
@@ -1434,7 +1434,12 @@ async function loadBuyOrders(page = 1, limit = 10) {
     return;
   }
 
-  Object.entries(orders).forEach(([id, order]) => {
+  // Преобразуем объект в массив и сортируем по дате (новые сначала)
+  const sortedOrders = Object.entries(orders)
+    .map(([id, order]) => ({ id, ...order }))
+    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  sortedOrders.forEach(({ id, ...order }) => {
     const orderItem = document.createElement('div');
     orderItem.className = 'admin-order-item';
     orderItem.innerHTML = `
@@ -1471,7 +1476,12 @@ async function loadSellOrders(page = 1, limit = 10) {
       return;
     }
 
-    Object.entries(orders).forEach(([id, order]) => {
+    // Преобразуем объект в массив и сортируем по дате (новые сначала)
+    const sortedOrders = Object.entries(orders)
+      .map(([id, order]) => ({ id, ...order }))
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    sortedOrders.forEach(({ id, ...order }) => {
       const orderItem = document.createElement('div');
       orderItem.className = 'admin-order-item';
       orderItem.innerHTML = `
