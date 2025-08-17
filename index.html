@@ -1011,14 +1011,10 @@
 
     <!-- Экран "Все заявки" -->
     <div class="orders-container" id="ordersContainer">
-        <div class="orders-title">ВСЕ ЗАЯВКИ</div>
+        <div class="orders-title">МОИ ЗАЯВКИ</div>
 
-        <input type="text" id="searchInput" class="exchange-field-input" placeholder="Введите номер заявки или адрес кошелька">
-        <button class="orders-button" id="searchButton">Найти заявку</button>
-
-        <div id="orderResult" style="margin-top: 20px; display: none;">
-            <div class="order-status" style="font-size: 18px; margin-bottom: 10px;"></div>
-            <div class="order-details" style="font-size: 14px;"></div>
+        <div id="userOrdersList" style="margin-top: 20px;">
+            <!-- Здесь будут отображаться заявки пользователя -->
         </div>
 
         <button class="orders-button" id="backButtonOrders">Перейти на главный экран</button>
@@ -1199,11 +1195,83 @@
             }
         }
 
-        // Обработчик для кнопки "Все заявки"
+      // Обработчик для кнопки "Все заявки"
         document.querySelector('.square-buttons .square-button:nth-child(2)').addEventListener('click', function() {
             document.querySelector('.main-container').style.display = 'none';
             document.getElementById('ordersContainer').style.display = 'block';
+            loadUserOrders();
         });
+        // Функция для загрузки заявок пользователя
+async function loadUserOrders() {
+    const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
+    if (!tgUser || !tgUser.username) {
+        document.getElementById('userOrdersList').innerHTML = '<p>Не удалось определить ваш Telegram username</p>';
+        return;
+    }
+
+    const username = tgUser.username;
+    const ordersList = document.getElementById('userOrdersList');
+    ordersList.innerHTML = '<p>Загрузка ваших заявок...</p>';
+
+    try {
+        // Ищем заявки в обоих разделах
+        const [buyOrdersSnapshot, sellOrdersSnapshot] = await Promise.all([
+            firebase.database().ref('orders').orderByChild('username_telegram').equalTo(`@${username}`).once('value'),
+            firebase.database().ref('ordersSale').orderByChild('username_telegramSale').equalTo(username).once('value')
+        ]);
+
+        const buyOrders = buyOrdersSnapshot.val() || {};
+        const sellOrders = sellOrdersSnapshot.val() || {};
+
+        if (Object.keys(buyOrders).length === 0 && Object.keys(sellOrders).length === 0) {
+            ordersList.innerHTML = '<p>У вас нет активных заявок</p>';
+            return;
+        }
+
+        let html = '';
+
+        // Обрабатываем заявки на покупку
+        Object.entries(buyOrders).forEach(([id, order]) => {
+            html += `
+                <div class="order-details" style="margin-bottom: 20px;">
+                    <h3>Заявка на покупку #${id.substring(0, 8)}</h3>
+                    <p><strong>Статус:</strong> <span style="color: ${getStatusColor(order.status)}">${order.status || 'в обработке'}</span></p>
+                    <p><strong>Сумма:</strong> ${order.amount} RUB</p>
+                    <p><strong>Кошелек:</strong> ${order.walletAddress || 'не указан'}</p>
+                    <p><strong>Дата:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
+                </div>
+            `;
+        });
+
+        // Обрабатываем заявки на продажу
+        Object.entries(sellOrders).forEach(([id, order]) => {
+            html += `
+                <div class="order-details" style="margin-bottom: 20px;">
+                    <h3>Заявка на продажу #${id.substring(0, 8)}</h3>
+                    <p><strong>Статус:</strong> <span style="color: ${getStatusColor(order.status)}">${order.status || 'в обработке'}</span></p>
+                    <p><strong>Имя:</strong> ${order.firstNameSale} ${order.lastNameSale}</p>
+                    <p><strong>Дата:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
+                </div>
+            `;
+        });
+
+        ordersList.innerHTML = html;
+    } catch (error) {
+        console.error('Ошибка загрузки заявок:', error);
+        ordersList.innerHTML = '<p>Произошла ошибка при загрузке ваших заявок</p>';
+    }
+}
+
+// Функция для определения цвета статуса
+function getStatusColor(status) {
+    if (!status) return '#FFC107'; // желтый для неизвестного статуса
+    status = status.toLowerCase();
+
+    if (status.includes('completed') || status.includes('заверш')) return '#4CAF50'; // зеленый
+    if (status.includes('cancelled') || status.includes('отмен')) return '#F44336'; // красный
+    if (status.includes('processing') || status.includes('обработ')) return '#2196F3'; // синий
+    return '#FFC107'; // желтый по умолчанию
+}
 
         // Обработчик для кнопки "Назад" в экране заявок
         document.getElementById('backButtonOrders').addEventListener('click', function() {
