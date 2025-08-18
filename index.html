@@ -1704,7 +1704,7 @@ function showOrderDetails(id, order, type) {
                         <p><strong>Фамилия:</strong> ${order.lastName || order.lastNameSale || 'не указано'}</p>
                         ${order.walletAddress ? `<p><strong>Кошелек:</strong> ${order.walletAddress}</p>` : ''}
                         ${order.amount ? `<p><strong>Сумма:</strong> ${order.amount} USDT</p>` : ''}
-                        <p><strong>Telegram:</strong> @${order.username_telegram || order.username_telegramSale || 'не указан'}</p>
+                        <p><strong>Telegram:</strong> ${order.username_telegram || order.username_telegramSale || 'не указан'}</p>
                         <p><strong>Дата:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : 'не указана'}</p>
 
                         <div class="admin-actions">
