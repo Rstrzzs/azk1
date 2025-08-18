@@ -1569,6 +1569,7 @@ document.querySelectorAll('.admin-tab').forEach(tab => {
 
 // Загрузка заказов на покупку (с сортировкой от новых к старым)
 // Загрузка заявок на покупку (исправленная версия)
+// Загрузка заявок на покупку (исправленная версия)
 async function loadBuyOrders(page = 1, limit = 10, statusFilter = 'all') {
     try {
         const ordersRef = firebase.database().ref('orders');
@@ -1576,86 +1577,82 @@ async function loadBuyOrders(page = 1, limit = 10, statusFilter = 'all') {
         const orders = snapshot.val();
 
         const ordersList = document.getElementById('buyOrdersList');
+        if (!ordersList) return;
+
+        // Очищаем список только если вкладка активна
         const tabContent = document.getElementById('buy-orders');
+        if (tabContent && tabContent.style.display === 'block') {
+            ordersList.innerHTML = `
+                <div class="admin-filter">
+                    <select id="buyStatusFilter">
+                        <option value="all">Все статусы</option>
+                        <option value="Новая">Новая</option>
+                        <option value="В обработке">В обработке</option>
+                        <option value="Завершенная">Завершенная</option>
+                    </select>
+                    <button id="applyBuyFilter">Применить</button>
+                </div>
+            `;
 
-        // Проверяем, что вкладка активна
-        if (!ordersList || !tabContent || tabContent.style.display !== 'block') {
-            return;
-        }
+            // Устанавливаем выбранный фильтр
+            if (statusFilter !== 'all') {
+                document.getElementById('buyStatusFilter').value = statusFilter;
+            }
 
-        ordersList.innerHTML = '';
+            // Обработчики для фильтра
+            document.getElementById('applyBuyFilter').addEventListener('click', () => {
+                const filter = document.getElementById('buyStatusFilter').value;
+                loadBuyOrders(1, 10, filter);
+            });
 
-        // Добавляем блок фильтрации
-        ordersList.innerHTML = `
-            <div class="admin-filter">
-                <select id="buyStatusFilter">
-                    <option value="all">Все статусы</option>
-                    <option value="Новая">Новая</option>
-                    <option value="В обработке">В обработке</option>
-                    <option value="Завершенная">Завершенная</option>
-                </select>
-                <button id="applyBuyFilter">Применить</button>
-            </div>
-        `;
+            if (!orders) {
+                ordersList.innerHTML += '<p>Нет заявок на покупку</p>';
+                return;
+            }
 
-        // Устанавливаем выбранный фильтр
-        if (statusFilter !== 'all') {
-            document.getElementById('buyStatusFilter').value = statusFilter;
-        }
+            // Преобразуем объект в массив и сортируем по дате (новые сначала)
+            let sortedOrders = Object.entries(orders)
+                .map(([id, order]) => ({ id, ...order }))
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        // Обработчики для фильтра
-        document.getElementById('applyBuyFilter').addEventListener('click', () => {
-            const filter = document.getElementById('buyStatusFilter').value;
-            loadBuyOrders(1, 10, filter);
-        });
+            // Применяем фильтр
+            if (statusFilter !== 'all') {
+                sortedOrders = sortedOrders.filter(order => {
+                    if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
+                    if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
+                    if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
+                    return true;
+                });
+            }
 
-        if (!orders) {
-            ordersList.innerHTML += '<p>Нет заявок на покупку</p>';
-            return;
-        }
+            if (sortedOrders.length === 0) {
+                ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
+                return;
+            }
 
-        // Преобразуем объект в массив и сортируем по дате (новые сначала)
-        let sortedOrders = Object.entries(orders)
-            .map(([id, order]) => ({ id, ...order }))
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            sortedOrders.forEach(({ id, ...order }) => {
+                const orderItem = document.createElement('div');
+                orderItem.className = 'admin-order-item';
 
-        // Применяем фильтр
-        if (statusFilter !== 'all') {
-            sortedOrders = sortedOrders.filter(order => {
-                if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
-                if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
-                if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
-                return true;
+                // Определяем класс статуса
+                let statusClass = 'status-new';
+                if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
+                if (order.status === 'Завершенная') statusClass = 'status-completed';
+
+                orderItem.innerHTML = `
+                    <div>
+                        <strong>${order.firstName} ${order.lastName}</strong>
+                        <span class="admin-order-status ${statusClass}">
+                            ${order.status || 'Новая'}
+                        </span>
+                    </div>
+                    <div>${order.amount} USDT</div>
+                    <div>${new Date(order.timestamp).toLocaleString()}</div>
+                `;
+                orderItem.addEventListener('click', () => showOrderDetails(id, order, 'buy'));
+                ordersList.appendChild(orderItem);
             });
         }
-
-        if (sortedOrders.length === 0) {
-            ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
-            return;
-        }
-
-        sortedOrders.forEach(({ id, ...order }) => {
-            const orderItem = document.createElement('div');
-            orderItem.className = 'admin-order-item';
-
-            // Определяем класс статуса
-            let statusClass = 'status-new';
-            if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
-            if (order.status === 'Завершенная') statusClass = 'status-completed';
-
-            orderItem.innerHTML = `
-                <div>
-                    <strong>${order.firstName} ${order.lastName}</strong>
-                    <span class="admin-order-status ${statusClass}">
-                        ${order.status || 'Новая'}
-                    </span>
-                </div>
-                <div>${order.amount} USDT</div>
-                <div>${new Date(order.timestamp).toLocaleString()}</div>
-            `;
-            orderItem.addEventListener('click', () => showOrderDetails(id, order, 'buy'));
-            ordersList.appendChild(orderItem);
-        });
     } catch (error) {
         console.error('Ошибка загрузки заявок на покупку:', error);
         const ordersList = document.getElementById('buyOrdersList');
@@ -1664,8 +1661,7 @@ async function loadBuyOrders(page = 1, limit = 10, statusFilter = 'all') {
         }
     }
 }
-// Аналогичная функция для заказов на продажу (loadSellOrders)
-// ...
+
 // Загрузка заявок на продажу (исправленная версия)
 async function loadSellOrders(page = 1, limit = 10, statusFilter = 'all') {
     try {
@@ -1674,86 +1670,82 @@ async function loadSellOrders(page = 1, limit = 10, statusFilter = 'all') {
         const orders = snapshot.val();
 
         const ordersList = document.getElementById('sellOrdersList');
+        if (!ordersList) return;
+
+        // Очищаем список только если вкладка активна
         const tabContent = document.getElementById('sell-orders');
+        if (tabContent && tabContent.style.display === 'block') {
+            ordersList.innerHTML = `
+                <div class="admin-filter">
+                    <select id="sellStatusFilter">
+                        <option value="all">Все статусы</option>
+                        <option value="Новая">Новая</option>
+                        <option value="В обработке">В обработке</option>
+                        <option value="Завершенная">Завершенная</option>
+                    </select>
+                    <button id="applySellFilter">Применить</button>
+                </div>
+            `;
 
-        // Проверяем, что вкладка активна
-        if (!ordersList || !tabContent || tabContent.style.display !== 'block') {
-            return;
-        }
+            // Устанавливаем выбранный фильтр
+            if (statusFilter !== 'all') {
+                document.getElementById('sellStatusFilter').value = statusFilter;
+            }
 
-        ordersList.innerHTML = '';
+            // Обработчики для фильтра
+            document.getElementById('applySellFilter').addEventListener('click', () => {
+                const filter = document.getElementById('sellStatusFilter').value;
+                loadSellOrders(1, 10, filter);
+            });
 
-        // Добавляем блок фильтрации
-        ordersList.innerHTML = `
-            <div class="admin-filter">
-                <select id="sellStatusFilter">
-                    <option value="all">Все статусы</option>
-                    <option value="Новая">Новая</option>
-                    <option value="В обработке">В обработке</option>
-                    <option value="Завершенная">Завершенная</option>
-                </select>
-                <button id="applySellFilter">Применить</button>
-            </div>
-        `;
+            if (!orders) {
+                ordersList.innerHTML += '<p>Нет заявок на продажу</p>';
+                return;
+            }
 
-        // Устанавливаем выбранный фильтр
-        if (statusFilter !== 'all') {
-            document.getElementById('sellStatusFilter').value = statusFilter;
-        }
+            // Преобразуем объект в массив и сортируем по дате (новые сначала)
+            let sortedOrders = Object.entries(orders)
+                .map(([id, order]) => ({ id, ...order }))
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        // Обработчики для фильтра
-        document.getElementById('applySellFilter').addEventListener('click', () => {
-            const filter = document.getElementById('sellStatusFilter').value;
-            loadSellOrders(1, 10, filter);
-        });
+            // Применяем фильтр
+            if (statusFilter !== 'all') {
+                sortedOrders = sortedOrders.filter(order => {
+                    if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
+                    if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
+                    if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
+                    return true;
+                });
+            }
 
-        if (!orders) {
-            ordersList.innerHTML += '<p>Нет заявок на продажу</p>';
-            return;
-        }
+            if (sortedOrders.length === 0) {
+                ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
+                return;
+            }
 
-        // Преобразуем объект в массив и сортируем по дате (новые сначала)
-        let sortedOrders = Object.entries(orders)
-            .map(([id, order]) => ({ id, ...order }))
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            sortedOrders.forEach(({ id, ...order }) => {
+                const orderItem = document.createElement('div');
+                orderItem.className = 'admin-order-item';
 
-        // Применяем фильтр
-        if (statusFilter !== 'all') {
-            sortedOrders = sortedOrders.filter(order => {
-                if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
-                if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
-                if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
-                return true;
+                // Определяем класс статуса
+                let statusClass = 'status-new';
+                if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
+                if (order.status === 'Завершенная') statusClass = 'status-completed';
+
+                orderItem.innerHTML = `
+                    <div>
+                        <strong>${order.firstNameSale || ''} ${order.lastNameSale || ''}</strong>
+                        <span class="admin-order-status ${statusClass}">
+                            ${order.status || 'Новая'}
+                        </span>
+                    </div>
+                    <div>${order.username_telegramSale || ''}</div>
+                    <div>${order.timestamp ? new Date(order.timestamp).toLocaleString() : ''}</div>
+                `;
+                orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
+                ordersList.appendChild(orderItem);
             });
         }
-
-        if (sortedOrders.length === 0) {
-            ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
-            return;
-        }
-
-        sortedOrders.forEach(({ id, ...order }) => {
-            const orderItem = document.createElement('div');
-            orderItem.className = 'admin-order-item';
-
-            // Определяем класс статуса
-            let statusClass = 'status-new';
-            if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
-            if (order.status === 'Завершенная') statusClass = 'status-completed';
-
-            orderItem.innerHTML = `
-                <div>
-                    <strong>${order.firstNameSale || ''} ${order.lastNameSale || ''}</strong>
-                    <span class="admin-order-status ${statusClass}">
-                        ${order.status || 'Новая'}
-                    </span>
-                </div>
-                <div>${order.username_telegramSale || ''}</div>
-                <div>${order.timestamp ? new Date(order.timestamp).toLocaleString() : ''}</div>
-            `;
-            orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
-            ordersList.appendChild(orderItem);
-        });
     } catch (error) {
         console.error('Ошибка загрузки заявок на продажу:', error);
         const ordersList = document.getElementById('sellOrdersList');
@@ -1960,28 +1952,34 @@ async function initAdminPanel() {
         document.getElementById('adminContainer').style.display = 'none';
       });
 
-      // Переключение вкладок
-      document.querySelectorAll('.admin-tab').forEach(tab => {
+     // Переключение вкладок
+document.querySelectorAll('.admin-tab').forEach(tab => {
     tab.addEventListener('click', async function() {
+        // Убираем активный класс у всех вкладок
         document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        // Добавляем активный класс текущей вкладке
         this.classList.add('active');
 
+        // Скрываем все содержимое вкладок
         document.querySelectorAll('.admin-tab-content').forEach(c => {
             c.style.display = 'none';
         });
 
+        // Показываем содержимое текущей вкладки
         const tabId = this.dataset.tab;
         const tabContent = document.getElementById(tabId);
         if (tabContent) {
             tabContent.style.display = 'block';
 
-            // Всегда загружаем данные при переключении вкладки
+            // Загружаем данные для активной вкладки
             if (tabId === 'buy-orders') {
                 await loadBuyOrders();
             } else if (tabId === 'sell-orders') {
                 await loadSellOrders();
             } else if (tabId === 'admins') {
                 await loadAdmins();
+            } else if (tabId === 'course-management') {
+                await loadExchangeRates();
             }
         }
     });
