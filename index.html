@@ -1708,7 +1708,7 @@ function showOrderDetails(id, order, type) {
                         <p><strong>Дата:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : 'не указана'}</p>
 
                         <div class="admin-actions">
-                            <button class="status-btn" data-status="В обработке @${currentAdmin}">В обработку</button>
+                            <button class="status-btn" data-status="В обработке ${currentAdmin}">В обработку</button>
                             <button class="status-btn" data-status="Завершенная">Завершить</button>
                             <button class="delete-btn">Удалить</button>
                         </div>
