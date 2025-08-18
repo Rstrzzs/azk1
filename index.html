@@ -1678,7 +1678,7 @@ async function loadSellOrders(page = 1, limit = 10, statusFilter = 'all') {
                                 ${order.status || 'Новая'}
                             </span>
                         </div>
-                        <div>@${order.username_telegramSale || ''}</div>
+                        <div>${order.username_telegramSale || ''}</div>
                         <div>${order.timestamp ? new Date(order.timestamp).toLocaleString() : ''}</div>
                     `;
                     orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
@@ -1692,7 +1692,7 @@ async function loadSellOrders(page = 1, limit = 10, statusFilter = 'all') {
 function showOrderDetails(id, order, type) {
             try {
                 const tgUser = window.Telegram.WebApp.initDataUnsafe?.user;
-                const currentAdmin = tgUser?.username ? `@${tgUser.username}` : 'админ';
+                const currentAdmin = tgUser?.username ? `${tgUser.username}` : 'админ';
 
                 const modal = document.createElement('div');
                 modal.className = 'admin-modal';
