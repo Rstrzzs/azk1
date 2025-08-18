@@ -945,7 +945,44 @@
             background: #4CAF50;
             color: white;
         }
+/* Добавить в секцию стилей */
+.course-management-form {
+  padding: 20px;
+}
 
+.admin-field {
+  margin-bottom: 20px;
+}
+
+.admin-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #555;
+}
+
+.admin-field-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.admin-button {
+  padding: 10px 20px;
+  background: #0068e0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.admin-button:hover {
+  background: #0052b3;
+}
 
     </style>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -1186,11 +1223,12 @@
 <div class="admin-container" id="adminContainer" style="display: none;">
   <div class="admin-title">АДМИН-ПАНЕЛЬ</div>
 
-  <div class="admin-tabs">
-    <button class="admin-tab active" data-tab="buy-orders">Заявки на покупку</button>
-    <button class="admin-tab" data-tab="sell-orders">Заявки на продажу</button>
-    <button class="admin-tab" data-tab="admins">Администраторы</button>
-  </div>
+ <div class="admin-tabs">
+  <button class="admin-tab active" data-tab="buy-orders">Заявки на покупку</button>
+  <button class="admin-tab" data-tab="sell-orders">Заявки на продажу</button>
+  <button class="admin-tab" data-tab="course-management">Курс</button>
+  <button class="admin-tab" data-tab="admins">Администраторы</button>
+</div>
 
   <div id="buy-orders" class="admin-tab-content">
     <div class="admin-orders-list" id="buyOrdersList"></div>
@@ -1209,6 +1247,19 @@
   </div>
 
   <button class="admin-back-button" id="backButtonAdmin">На главную</button>
+    <div id="course-management" class="admin-tab-content" style="display: none;">
+  <div class="course-management-form">
+    <div class="admin-field">
+      <label>Курс покупки (RUB/USDT):</label>
+      <input type="number" step="0.01" id="buyRateInput" class="admin-field-input">
+    </div>
+    <div class="admin-field">
+      <label>Курс продажи (RUB/USDT):</label>
+      <input type="number" step="0.01" id="sellRateInput" class="admin-field-input">
+    </div>
+    <button id="saveRatesBtn" class="admin-button">Сохранить курс</button>
+  </div>
+</div>
 </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
@@ -1277,25 +1328,24 @@
             document.getElementById('sellMenu').style.display = 'block';
         });
         async function fetchExchangeRates() {
-            try {
-                // Здесь можно использовать реальное API, например:
-                // const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-                // const data = await response.json();
-                // const rubRate = data.rates.RUB;
+  try {
+    const snapshot = await firebase.database().ref('exchangeRates').once('value');
+    const rates = snapshot.val();
 
-                // Для примера используем фиктивные данные
-                const buyRate = (Math.random() * 2 + 78).toFixed(1);
-                const sellRate = (buyRate - 2).toFixed(1);
-
-                document.getElementById('buyRate').textContent = `${buyRate} RUB`;
-                document.getElementById('sellRate').textContent = `${sellRate} RUB`;
-
-            } catch (error) {
-                console.error('Ошибка при получении курса:', error);
-                document.getElementById('buyRate').textContent = '79.8 RUB';
-                document.getElementById('sellRate').textContent = '77 RUB';
-            }
-        }
+    if (rates) {
+      document.getElementById('buyRate').textContent = `${rates.buy.toFixed(2)} RUB`;
+      document.getElementById('sellRate').textContent = `${rates.sell.toFixed(2)} RUB`;
+    } else {
+      // Значения по умолчанию, если в базе нет данных
+      document.getElementById('buyRate').textContent = '79.85 RUB';
+      document.getElementById('sellRate').textContent = '77.00 RUB';
+    }
+  } catch (error) {
+    console.error('Ошибка при получении курса:', error);
+    document.getElementById('buyRate').textContent = '79.85 RUB';
+    document.getElementById('sellRate').textContent = '77.00 RUB';
+  }
+}
 
 
 
@@ -1309,7 +1359,7 @@
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
             // Можно сразу загрузить курсы
-            // fetchExchangeRates();
+             fetchExchangeRates();
         });
 
         // Обработчик для кнопки "Поддержка"
@@ -1519,175 +1569,189 @@ document.querySelectorAll('.admin-tab').forEach(tab => {
 
 // Загрузка заказов на покупку (с сортировкой от новых к старым)
 async function loadBuyOrders(page = 1, limit = 10, statusFilter = 'all') {
-            const ordersRef = firebase.database().ref('orders');
-            const snapshot = await ordersRef.once('value');
-            const orders = snapshot.val();
+    try {
+        const ordersRef = firebase.database().ref('orders');
+        const snapshot = await ordersRef.once('value');
+        const orders = snapshot.val();
 
-            const ordersList = document.getElementById('buyOrdersList');
-            ordersList.innerHTML = '';
+        const ordersList = document.getElementById('buyOrdersList');
+        if (!ordersList) return;
 
-            if (!orders) {
-                ordersList.innerHTML = '<p>Нет заявок на покупку</p>';
-                return;
-            }
+        ordersList.innerHTML = '';
 
-            // Добавляем блок фильтрации
-            ordersList.innerHTML = `
-                <div class="admin-filter">
-                    <select id="buyStatusFilter">
-                        <option value="all">Все статусы</option>
-                        <option value="Новая">Новая</option>
-                        <option value="В обработке">В обработке</option>
-                        <option value="Завершенная">Завершенная</option>
-                    </select>
-                    <button id="applyBuyFilter">Применить</button>
-                </div>
-            `;
+        // Добавляем блок фильтрации
+        ordersList.innerHTML = `
+            <div class="admin-filter">
+                <select id="buyStatusFilter">
+                    <option value="all">Все статусы</option>
+                    <option value="Новая">Новая</option>
+                    <option value="В обработке">В обработке</option>
+                    <option value="Завершенная">Завершенная</option>
+                </select>
+                <button id="applyBuyFilter">Применить</button>
+            </div>
+        `;
 
-            // Обработчики для фильтра
-            document.getElementById('applyBuyFilter').addEventListener('click', () => {
-                const filter = document.getElementById('buyStatusFilter').value;
-                loadBuyOrders(1, 10, filter);
-            });
+        // Устанавливаем выбранный фильтр
+        if (statusFilter !== 'all') {
+            document.getElementById('buyStatusFilter').value = statusFilter;
+        }
 
-            // Устанавливаем выбранный фильтр
-            if (statusFilter !== 'all') {
-                document.getElementById('buyStatusFilter').value = statusFilter;
-            }
+        // Обработчики для фильтра
+        document.getElementById('applyBuyFilter').addEventListener('click', () => {
+            const filter = document.getElementById('buyStatusFilter').value;
+            loadBuyOrders(1, 10, filter);
+        });
 
-            // Преобразуем объект в массив и сортируем по дате (новые сначала)
-            let sortedOrders = Object.entries(orders)
-                .map(([id, order]) => ({ id, ...order }))
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        if (!orders) {
+            ordersList.innerHTML += '<p>Нет заявок на покупку</p>';
+            return;
+        }
 
-            // Применяем фильтр
-            if (statusFilter !== 'all') {
-                sortedOrders = sortedOrders.filter(order => {
-                    if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
-                    if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
-                    if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
-                    return true;
-                });
-            }
+        // Преобразуем объект в массив и сортируем по дате (новые сначала)
+        let sortedOrders = Object.entries(orders)
+            .map(([id, order]) => ({ id, ...order }))
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-            if (sortedOrders.length === 0) {
-                ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
-                return;
-            }
-
-            sortedOrders.forEach(({ id, ...order }) => {
-                const orderItem = document.createElement('div');
-                orderItem.className = 'admin-order-item';
-
-                // Определяем класс статуса
-                let statusClass = 'status-new';
-                if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
-                if (order.status === 'Завершенная') statusClass = 'status-completed';
-
-                orderItem.innerHTML = `
-                    <div>
-                        <strong>${order.firstName} ${order.lastName}</strong>
-                        <span class="admin-order-status ${statusClass}">
-                            ${order.status || 'Новая'}
-                        </span>
-                    </div>
-                    <div>${order.amount} USDT</div>
-                    <div>${new Date(order.timestamp).toLocaleString()}</div>
-                `;
-                orderItem.addEventListener('click', () => showOrderDetails(id, order, 'buy'));
-                ordersList.appendChild(orderItem);
+        // Применяем фильтр
+        if (statusFilter !== 'all') {
+            sortedOrders = sortedOrders.filter(order => {
+                if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
+                if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
+                if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
+                return true;
             });
         }
+
+        if (sortedOrders.length === 0) {
+            ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
+            return;
+        }
+
+        sortedOrders.forEach(({ id, ...order }) => {
+            const orderItem = document.createElement('div');
+            orderItem.className = 'admin-order-item';
+
+            // Определяем класс статуса
+            let statusClass = 'status-new';
+            if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
+            if (order.status === 'Завершенная') statusClass = 'status-completed';
+
+            orderItem.innerHTML = `
+                <div>
+                    <strong>${order.firstName} ${order.lastName}</strong>
+                    <span class="admin-order-status ${statusClass}">
+                        ${order.status || 'Новая'}
+                    </span>
+                </div>
+                <div>${order.amount} USDT</div>
+                <div>${new Date(order.timestamp).toLocaleString()}</div>
+            `;
+            orderItem.addEventListener('click', () => showOrderDetails(id, order, 'buy'));
+            ordersList.appendChild(orderItem);
+        });
+    } catch (error) {
+        console.error('Ошибка загрузки заявок на покупку:', error);
+        const ordersList = document.getElementById('buyOrdersList');
+        if (ordersList) {
+            ordersList.innerHTML = '<p>Произошла ошибка при загрузке заявок</p>';
+        }
+    }
+}
 
 // Аналогичная функция для заказов на продажу (loadSellOrders)
 // ...
 // Загрузка заявок на продажу (исправленная версия)
 async function loadSellOrders(page = 1, limit = 10, statusFilter = 'all') {
-            try {
-                const ordersRef = firebase.database().ref('ordersSale');
-                const snapshot = await ordersRef.once('value');
-                const orders = snapshot.val();
+    try {
+        const ordersRef = firebase.database().ref('ordersSale');
+        const snapshot = await ordersRef.once('value');
+        const orders = snapshot.val();
 
-                const ordersList = document.getElementById('sellOrdersList');
-                if (!ordersList) return;
+        const ordersList = document.getElementById('sellOrdersList');
+        if (!ordersList) return;
 
-                ordersList.innerHTML = '';
+        ordersList.innerHTML = '';
 
-                if (!orders) {
-                    ordersList.innerHTML = '<p>Нет заявок на продажу</p>';
-                    return;
-                }
+        // Добавляем блок фильтрации
+        ordersList.innerHTML = `
+            <div class="admin-filter">
+                <select id="sellStatusFilter">
+                    <option value="all">Все статусы</option>
+                    <option value="Новая">Новая</option>
+                    <option value="В обработке">В обработке</option>
+                    <option value="Завершенная">Завершенная</option>
+                </select>
+                <button id="applySellFilter">Применить</button>
+            </div>
+        `;
 
-                // Добавляем блок фильтрации
-                ordersList.innerHTML = `
-                    <div class="admin-filter">
-                        <select id="sellStatusFilter">
-                            <option value="all">Все статусы</option>
-                            <option value="Новая">Новая</option>
-                            <option value="В обработке">В обработке</option>
-                            <option value="Завершенная">Завершенная</option>
-                        </select>
-                        <button id="applySellFilter">Применить</button>
-                    </div>
-                `;
-
-                // Обработчики для фильтра
-                document.getElementById('applySellFilter').addEventListener('click', () => {
-                    const filter = document.getElementById('sellStatusFilter').value;
-                    loadSellOrders(1, 10, filter);
-                });
-
-                // Устанавливаем выбранный фильтр
-                if (statusFilter !== 'all') {
-                    document.getElementById('sellStatusFilter').value = statusFilter;
-                }
-
-                // Преобразуем объект в массив и сортируем по дате (новые сначала)
-                let sortedOrders = Object.entries(orders)
-                    .map(([id, order]) => ({ id, ...order }))
-                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-                // Применяем фильтр
-                if (statusFilter !== 'all') {
-                    sortedOrders = sortedOrders.filter(order => {
-                        if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
-                        if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
-                        if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
-                        return true;
-                    });
-                }
-
-                if (sortedOrders.length === 0) {
-                    ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
-                    return;
-                }
-
-                sortedOrders.forEach(({ id, ...order }) => {
-                    const orderItem = document.createElement('div');
-                    orderItem.className = 'admin-order-item';
-
-                    // Определяем класс статуса
-                    let statusClass = 'status-new';
-                    if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
-                    if (order.status === 'Завершенная') statusClass = 'status-completed';
-
-                    orderItem.innerHTML = `
-                        <div>
-                            <strong>${order.firstNameSale || ''} ${order.lastNameSale || ''}</strong>
-                            <span class="admin-order-status ${statusClass}">
-                                ${order.status || 'Новая'}
-                            </span>
-                        </div>
-                        <div>${order.username_telegramSale || ''}</div>
-                        <div>${order.timestamp ? new Date(order.timestamp).toLocaleString() : ''}</div>
-                    `;
-                    orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
-                    ordersList.appendChild(orderItem);
-                });
-            } catch (error) {
-                console.error('Ошибка загрузки заявок на продажу:', error);
-            }
+        // Устанавливаем выбранный фильтр
+        if (statusFilter !== 'all') {
+            document.getElementById('sellStatusFilter').value = statusFilter;
         }
+
+        // Обработчики для фильтра
+        document.getElementById('applySellFilter').addEventListener('click', () => {
+            const filter = document.getElementById('sellStatusFilter').value;
+            loadSellOrders(1, 10, filter);
+        });
+
+        if (!orders) {
+            ordersList.innerHTML += '<p>Нет заявок на продажу</p>';
+            return;
+        }
+
+        // Преобразуем объект в массив и сортируем по дате (новые сначала)
+        let sortedOrders = Object.entries(orders)
+            .map(([id, order]) => ({ id, ...order }))
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        // Применяем фильтр
+        if (statusFilter !== 'all') {
+            sortedOrders = sortedOrders.filter(order => {
+                if (statusFilter === 'Новая') return !order.status || order.status === 'Новая';
+                if (statusFilter === 'В обработке') return order.status && order.status.startsWith('В обработке');
+                if (statusFilter === 'Завершенная') return order.status === 'Завершенная';
+                return true;
+            });
+        }
+
+        if (sortedOrders.length === 0) {
+            ordersList.innerHTML += '<p>Нет заявок с выбранным статусом</p>';
+            return;
+        }
+
+        sortedOrders.forEach(({ id, ...order }) => {
+            const orderItem = document.createElement('div');
+            orderItem.className = 'admin-order-item';
+
+            // Определяем класс статуса
+            let statusClass = 'status-new';
+            if (order.status && order.status.startsWith('В обработке')) statusClass = 'status-processing';
+            if (order.status === 'Завершенная') statusClass = 'status-completed';
+
+            orderItem.innerHTML = `
+                <div>
+                    <strong>${order.firstNameSale || ''} ${order.lastNameSale || ''}</strong>
+                    <span class="admin-order-status ${statusClass}">
+                        ${order.status || 'Новая'}
+                    </span>
+                </div>
+                <div>${order.username_telegramSale || ''}</div>
+                <div>${order.timestamp ? new Date(order.timestamp).toLocaleString() : ''}</div>
+            `;
+            orderItem.addEventListener('click', () => showOrderDetails(id, order, 'sell'));
+            ordersList.appendChild(orderItem);
+        });
+    } catch (error) {
+        console.error('Ошибка загрузки заявок на продажу:', error);
+        const ordersList = document.getElementById('sellOrdersList');
+        if (ordersList) {
+            ordersList.innerHTML = '<p>Произошла ошибка при загрузке заявок</p>';
+        }
+    }
+}
 // Показ деталей заказа
 function showOrderDetails(id, order, type) {
             try {
@@ -1888,26 +1952,30 @@ async function initAdminPanel() {
 
       // Переключение вкладок
       document.querySelectorAll('.admin-tab').forEach(tab => {
-        tab.addEventListener('click', async function() {
-          document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-          this.classList.add('active');
+    tab.addEventListener('click', async function() {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
 
-          document.querySelectorAll('.admin-tab-content').forEach(c => {
+        document.querySelectorAll('.admin-tab-content').forEach(c => {
             c.style.display = 'none';
-          });
-
-          const tabId = this.dataset.tab;
-          document.getElementById(tabId).style.display = 'block';
-
-          if (tabId === 'buy-orders') {
-            await loadBuyOrders();
-          } else if (tabId === 'sell-orders') {
-            await loadSellOrders();
-          } else if (tabId === 'admins') {
-            await loadAdmins();
-          }
         });
-      });
+
+        const tabId = this.dataset.tab;
+        const tabContent = document.getElementById(tabId);
+        if (tabContent) {
+            tabContent.style.display = 'block';
+
+            // Всегда загружаем данные при переключении вкладки
+            if (tabId === 'buy-orders') {
+                await loadBuyOrders();
+            } else if (tabId === 'sell-orders') {
+                await loadSellOrders();
+            } else if (tabId === 'admins') {
+                await loadAdmins();
+            }
+        }
+    });
+});
 
       // Инициализация слушателей реального времени
       setupRealtimeListeners();
@@ -2030,6 +2098,77 @@ function getStatusColor(status) {
     if (status.includes('processing') || status.includes('обработ')) return '#2196F3'; // синий
     return '#FFC107'; // желтый по умолчанию
 }
+    // Функция загрузки текущих курсов
+async function loadExchangeRates() {
+  try {
+    const snapshot = await firebase.database().ref('exchangeRates').once('value');
+    const rates = snapshot.val() || {};
+
+    if (rates.buy) {
+      document.getElementById('buyRateInput').value = rates.buy;
+    }
+    if (rates.sell) {
+      document.getElementById('sellRateInput').value = rates.sell;
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки курсов:', error);
+  }
+}
+
+// Функция сохранения курсов
+async function saveExchangeRates() {
+  try {
+    const buyRate = parseFloat(document.getElementById('buyRateInput').value);
+    const sellRate = parseFloat(document.getElementById('sellRateInput').value);
+
+    if (isNaN(buyRate) || isNaN(sellRate)) {
+      showAdminNotification('Введите корректные значения курсов!', 'error');
+      return;
+    }
+
+    await firebase.database().ref('exchangeRates').set({
+      buy: buyRate,
+      sell: sellRate,
+      lastUpdated: new Date().toISOString()
+    });
+
+    showAdminNotification('Курсы успешно сохранены!', 'success');
+  } catch (error) {
+    console.error('Ошибка сохранения курсов:', error);
+    showAdminNotification('Ошибка при сохранении курсов!', 'error');
+  }
+}
+
+// Обработчик для кнопки сохранения курсов
+document.getElementById('saveRatesBtn').addEventListener('click', saveExchangeRates);
+
+// Обновим функцию переключения вкладок, чтобы загружать курсы при открытии
+document.querySelectorAll('.admin-tab').forEach(tab => {
+  tab.addEventListener('click', async function() {
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+
+    document.querySelectorAll('.admin-tab-content').forEach(c => {
+      c.style.display = 'none';
+    });
+
+    const tabId = this.dataset.tab;
+    const tabContent = document.getElementById(tabId);
+    if (tabContent) {
+      tabContent.style.display = 'block';
+
+      if (tabId === 'buy-orders') {
+        await loadBuyOrders();
+      } else if (tabId === 'sell-orders') {
+        await loadSellOrders();
+      } else if (tabId === 'admins') {
+        await loadAdmins();
+      } else if (tabId === 'course-management') {
+        await loadExchangeRates();
+      }
+    }
+  });
+});
 </script>
 
 </body>
