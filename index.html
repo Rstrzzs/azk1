@@ -1568,6 +1568,7 @@ document.querySelectorAll('.admin-tab').forEach(tab => {
 });
 
 // Загрузка заказов на покупку (с сортировкой от новых к старым)
+// Загрузка заявок на покупку (исправленная версия)
 async function loadBuyOrders(page = 1, limit = 10, statusFilter = 'all') {
     try {
         const ordersRef = firebase.database().ref('orders');
@@ -1575,7 +1576,12 @@ async function loadBuyOrders(page = 1, limit = 10, statusFilter = 'all') {
         const orders = snapshot.val();
 
         const ordersList = document.getElementById('buyOrdersList');
-        if (!ordersList) return;
+        const tabContent = document.getElementById('buy-orders');
+
+        // Проверяем, что вкладка активна
+        if (!ordersList || !tabContent || tabContent.style.display !== 'block') {
+            return;
+        }
 
         ordersList.innerHTML = '';
 
@@ -1658,7 +1664,6 @@ async function loadBuyOrders(page = 1, limit = 10, statusFilter = 'all') {
         }
     }
 }
-
 // Аналогичная функция для заказов на продажу (loadSellOrders)
 // ...
 // Загрузка заявок на продажу (исправленная версия)
@@ -1669,7 +1674,12 @@ async function loadSellOrders(page = 1, limit = 10, statusFilter = 'all') {
         const orders = snapshot.val();
 
         const ordersList = document.getElementById('sellOrdersList');
-        if (!ordersList) return;
+        const tabContent = document.getElementById('sell-orders');
+
+        // Проверяем, что вкладка активна
+        if (!ordersList || !tabContent || tabContent.style.display !== 'block') {
+            return;
+        }
 
         ordersList.innerHTML = '';
 
